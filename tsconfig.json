@@ -13,15 +13,22 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
+<<<<<<< HEAD
     "plugins": [
       {
         "name": "next"
       }
     ],
+=======
+>>>>>>> 46be486 (Initial commit from Create Next App)
     "paths": {
       "@/*": ["./src/*"]
     }
   },
+<<<<<<< HEAD
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+=======
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
+>>>>>>> 46be486 (Initial commit from Create Next App)
   "exclude": ["node_modules"]
 }
