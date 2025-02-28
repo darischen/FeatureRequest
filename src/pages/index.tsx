@@ -1,16 +1,18 @@
 import Head from "next/head";
 import { useState } from "react";
 import { useRouter } from "next/router";
-import { auth } from "@/firebaseConfig";
+import { auth, db } from "@/firebaseConfig";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
 } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
+  const [username, setUsername] = useState(""); // used for registration
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -23,7 +25,19 @@ export default function Login() {
       if (isLogin) {
         await signInWithEmailAndPassword(auth, email, password);
       } else {
-        await createUserWithEmailAndPassword(auth, email, password);
+        // Create user with email & password
+        const userCredential = await createUserWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
+        const user = userCredential.user;
+        // Create a document in Firestore "Users" collection with user id, username, and default role.
+        await setDoc(doc(db, "Users", user.uid), {
+          id: user.uid,
+          username: username,
+          role: "user",
+        });
       }
       // After successful authentication, redirect to the leaderboard page.
       router.push("/leaderboard");
@@ -56,6 +70,19 @@ export default function Login() {
           </h1>
           {error && <p className="text-red-500 mb-4">{error}</p>}
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Render username input only for registration */}
+            {!isLogin && (
+              <div>
+                <label className="block text-black">Username</label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full p-2 border rounded text-black"
+                  required
+                />
+              </div>
+            )}
             <div>
               <label className="block text-black">Email</label>
               <input

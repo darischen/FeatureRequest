@@ -3,17 +3,16 @@ import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
-import "dotenv/config";
 
 const firebaseConfig = {
-    apiKey: process.env.FIREBASE_API_KEY,
+    apiKey: "AIzaSyCKBGLZpLEAwWdR79qHnGiqShQm8BeenGs",
     authDomain: "featurerequest-549e3.firebaseapp.com",
     projectId: "featurerequest-549e3",
     storageBucket: "featurerequest-549e3.firebasestorage.app",
     messagingSenderId: "606009690697",
     appId: "1:606009690697:web:fc4023fe1ba0a7dae00d98",
     measurementId: "G-0XSVHWYZP1"
-  };
+};
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore();
