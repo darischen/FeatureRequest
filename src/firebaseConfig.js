@@ -3,9 +3,10 @@ import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
+import "dotenv/config";
 
 const firebaseConfig = {
-    apiKey: "AIzaSyCKBGLZpLEAwWdR79qHnGiqShQm8BeenGs",
+    apiKey: process.env.FIREBASE_API_KEY,
     authDomain: "featurerequest-549e3.firebaseapp.com",
     projectId: "featurerequest-549e3",
     storageBucket: "featurerequest-549e3.firebasestorage.app",

@@ -5,6 +5,8 @@ import { auth } from "@/firebaseConfig";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup,
 } from "firebase/auth";
 
 export default function Login() {
@@ -23,6 +25,18 @@ export default function Login() {
       } else {
         await createUserWithEmailAndPassword(auth, email, password);
       }
+      // After successful authentication, redirect to the leaderboard page.
+      router.push("/leaderboard");
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setError("");
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
       // After successful authentication, redirect to the leaderboard page.
       router.push("/leaderboard");
     } catch (err: any) {
@@ -69,6 +83,14 @@ export default function Login() {
               {isLogin ? "Login" : "Register"}
             </button>
           </form>
+          <div className="mt-4">
+            <button
+              onClick={handleGoogleSignIn}
+              className="w-full bg-red-500 text-white p-2 rounded"
+            >
+              Sign in with Google
+            </button>
+          </div>
           <p className="mt-4 text-center text-black">
             {isLogin
               ? "Don't have an account?"
