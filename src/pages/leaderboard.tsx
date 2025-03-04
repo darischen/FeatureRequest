@@ -1,28 +1,31 @@
 import Head from 'next/head';
 import { useState, useEffect } from 'react';
 import { db, auth } from '@/firebaseConfig';
-import { 
-  collection, 
-  addDoc, 
-  query, 
-  orderBy, 
-  onSnapshot, 
-  updateDoc, 
-  doc, 
-  arrayUnion, 
-  increment 
+import {
+  collection,
+  addDoc,
+  query,
+  where,
+  orderBy,
+  onSnapshot,
+  updateDoc,
+  doc,
+  arrayUnion,
+  increment,
+  getDoc,
+  arrayRemove
 } from 'firebase/firestore';
 
 interface Feature {
   id?: string;
   title: string;
   description: string;
-  categories: string[];
+  category: string[];
   upvotes: number;
   upvotedBy?: string[];
   status?: string;
-  submittedBy?: string | null;
-  createdAt: number;
+  submitted_by?: string | null;
+  created_at: number;
 }
 
 export default function FeatureRequestPage() {
@@ -32,10 +35,8 @@ export default function FeatureRequestPage() {
   const [features, setFeatures] = useState<Feature[]>([]);
   const [sortOption, setSortOption] = useState<'votes-desc' | 'votes-asc' | 'time-desc' | 'time-asc'>('votes-desc');
 
-  // Sample available categories. You can customize these.
   const availableCategories = ["UI", "UX", "Performance", "Bug", "Feature", "Other"];
 
-  // Handle category checkbox changes. Limit selection to max of 3.
   const handleCategoryChange = (category: string) => {
     if (selectedCategories.includes(category)) {
       setSelectedCategories(selectedCategories.filter(c => c !== category));
@@ -44,56 +45,81 @@ export default function FeatureRequestPage() {
     }
   };
 
-  // Submit a new feature request to Firestore.
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !description.trim()) return;
+
     try {
+      if (!auth.currentUser) {
+        alert("You must be logged in to submit a feature request.");
+        return;
+      }
+
       await addDoc(collection(db, "FeatureRequests"), {
-        title,
-        description,
-        categories: selectedCategories,
+        title: title.trim(),
+        description: description.trim(),
+        category: selectedCategories.length > 0 ? selectedCategories : ["Other"],
+        status: "pending",
         upvotes: 0,
         upvotedBy: [],
-        status: "pending", // new requests are pending admin approval
-        submittedBy: auth.currentUser ? auth.currentUser.uid : null,
-        createdAt: Date.now()
+        submitted_by: auth.currentUser.uid,
+        created_at: Date.now()
       });
-      // Reset form fields
+
       setTitle('');
       setDescription('');
       setSelectedCategories([]);
+
     } catch (error) {
-      console.error("Error adding feature: ", error);
+      console.error("Error submitting feature request:", error);
+      alert("Failed to submit request. Please check your permissions.");
     }
   };
 
-  // Upvote a feature; allow each user to upvote only once.
-  const handleUpvote = async (featureId: string | undefined, feature: Feature) => {
+  // Toggle upvote: if user has already upvoted, remove it; otherwise, add it.
+  const handleUpvote = async (feature: Feature) => {
     if (!auth.currentUser) {
       alert("Please login to upvote.");
       return;
     }
-    if (!featureId) return;
+    if (!feature.id) return;
+
     const uid = auth.currentUser.uid;
-    if (feature.upvotedBy && feature.upvotedBy.includes(uid)) {
-      alert("You have already upvoted this request.");
-      return;
-    }
+    const featureRef = doc(db, "FeatureRequests", feature.id);
+
     try {
-      const featureRef = doc(db, "FeatureRequests", featureId);
-      await updateDoc(featureRef, {
-        upvotes: increment(1),
-        upvotedBy: arrayUnion(uid)
-      });
+      const featureSnap = await getDoc(featureRef);
+      if (!featureSnap.exists()) return;
+
+      const featureData = featureSnap.data() as Feature;
+      const userHasUpvoted = featureData.upvotedBy && featureData.upvotedBy.includes(uid);
+
+      if (userHasUpvoted) {
+        // Retract upvote
+        await updateDoc(featureRef, {
+          upvotes: increment(-1),
+          upvotedBy: arrayRemove(uid)
+        });
+      } else {
+        // Add upvote
+        await updateDoc(featureRef, {
+          upvotes: increment(1),
+          upvotedBy: arrayUnion(uid)
+        });
+      }
     } catch (error) {
-      console.error("Error upvoting feature: ", error);
+      console.error("Error toggling upvote:", error);
     }
   };
 
-  // Listen to real-time updates in the "FeatureRequests" collection.
   useEffect(() => {
-    const q = query(collection(db, "FeatureRequests"), orderBy("createdAt", "desc"));
+    // Query all features (no status filter), ordered by created_at descending
+    const q = query(
+      collection(db, "FeatureRequests"),
+      where("status", "==", "approved"),
+      //orderBy("created_at", "desc")
+    );
+
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const featuresData: Feature[] = [];
       querySnapshot.forEach((docSnapshot) => {
@@ -101,15 +127,16 @@ export default function FeatureRequestPage() {
       });
       setFeatures(featuresData);
     });
+
     return () => unsubscribe();
   }, []);
 
-  // Sort features locally based on sortOption.
+  // Sort features locally based on sortOption
   const sortedFeatures = [...features].sort((a, b) => {
     if (sortOption === 'votes-asc') return a.upvotes - b.upvotes;
     if (sortOption === 'votes-desc') return b.upvotes - a.upvotes;
-    if (sortOption === 'time-asc') return a.createdAt - b.createdAt;
-    if (sortOption === 'time-desc') return b.createdAt - a.createdAt;
+    if (sortOption === 'time-asc') return a.created_at - b.created_at;
+    if (sortOption === 'time-desc') return b.created_at - a.created_at;
     return 0;
   });
 
@@ -230,44 +257,72 @@ export default function FeatureRequestPage() {
             <div>
               {sortedFeatures.length > 0 ? (
                 <ul className="space-y-4">
-                  {sortedFeatures.map((feature, index) => (
-                    <li
-                      key={feature.id || index}
-                      className="bg-accent6 border border-accent4 p-4 rounded-md flex flex-col md:flex-row items-start md:items-center justify-between"
-                    >
-                      <div className="flex-1">
-                        <h3 className="text-lg font-bold text-primary break-all">{feature.title}</h3>
-                        <p className="text-primary mt-1 break-all">{feature.description}</p>
-                        {feature.categories && feature.categories.length > 0 && (
-                          <div className="mt-2 flex flex-wrap gap-2">
-                            {feature.categories.map((cat, i) => (
-                              <span key={i} className="bg-secondary text-accent6 px-2 py-1 rounded text-xs">
-                                {cat}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => handleUpvote(feature.id, feature)}
-                        className="mt-4 md:mt-0 flex flex-col items-center justify-center border border-accent4 rounded-md p-2 w-12 h-12 focus:outline-none"
+                  {sortedFeatures.map((feature, index) => {
+                    const currentUser = auth.currentUser?.uid;
+                    const userHasUpvoted =
+                      currentUser && feature.upvotedBy?.includes(currentUser);
+
+                    return (
+                      <li
+                        key={feature.id || index}
+                        className="bg-accent6 border border-accent4 p-4 rounded-md flex flex-col md:flex-row items-start md:items-center justify-between"
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5 text-accent3 hover:text-accent2 transition"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
+                        <div className="flex-1">
+                          <h3 className="text-lg font-bold text-primary break-all">
+                            {feature.title}
+                          </h3>
+                          <p className="text-primary mt-1 break-all">
+                            {feature.description}
+                          </p>
+                          {feature.category && feature.category.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {feature.category.map((cat, i) => (
+                                <span
+                                  key={i}
+                                  className="bg-secondary text-accent6 px-2 py-1 rounded text-xs"
+                                >
+                                  {cat}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Upvote Box on the Right with dynamic highlights */}
+                        <div
+                          onClick={() => handleUpvote(feature)}
+                          className={`cursor-pointer border border-accent4 rounded-md p-2 w-12 h-12 flex flex-col items-center justify-center ${
+                            userHasUpvoted
+                              ? 'bg-blue-500 text-white'
+                              : 'bg-blue-100 text-blue-700'
+                          }`}
                         >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                        </svg>
-                        <span className="text-primary text-xs mt-1">{feature.upvotes}</span>
-                      </button>
-                    </li>
-                  ))}
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5 hover:text-accent2 transition"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 15l7-7 7 7"
+                            />
+                          </svg>
+                          <span className="text-xs mt-1">
+                            {feature.upvotes}
+                          </span>
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               ) : (
-                <p className="text-primary">No feature requests yet. Be the first to submit one!</p>
+                <p className="text-primary">
+                  No approved feature requests yet.
+                </p>
               )}
             </div>
           </div>
