@@ -6,7 +6,7 @@ import {
   addDoc,
   query,
   where,
-  orderBy,
+  // orderBy, // commented out per your file
   onSnapshot,
   updateDoc,
   doc,
@@ -15,6 +15,8 @@ import {
   getDoc,
   arrayRemove
 } from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
+import { useRouter } from 'next/router';
 
 interface Feature {
   id?: string;
@@ -34,6 +36,7 @@ export default function FeatureRequestPage() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [features, setFeatures] = useState<Feature[]>([]);
   const [sortOption, setSortOption] = useState<'votes-desc' | 'votes-asc' | 'time-desc' | 'time-asc'>('votes-desc');
+  const router = useRouter();
 
   const availableCategories = ["UI", "UX", "Performance", "Bug", "Feature", "Other"];
 
@@ -112,12 +115,23 @@ export default function FeatureRequestPage() {
     }
   };
 
+  // Logout handler
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.push('/');
+    } catch (err) {
+      console.error("Error signing out:", err);
+      alert("Failed to sign out. Please try again.");
+    }
+  };
+
   useEffect(() => {
     // Query all features (no status filter), ordered by created_at descending
     const q = query(
       collection(db, "FeatureRequests"),
-      where("status", "==", "approved"),
-      //orderBy("created_at", "desc")
+      where("status", "==", "approved")
+      // orderBy("created_at", "desc") // commented out as in your file
     );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -139,6 +153,8 @@ export default function FeatureRequestPage() {
     if (sortOption === 'time-desc') return b.created_at - a.created_at;
     return 0;
   });
+
+  const currentUser = auth.currentUser;
 
   return (
     <>
@@ -163,6 +179,13 @@ export default function FeatureRequestPage() {
                   <li>
                     <a href="#" className="text-accent6 hover:text-accent5">Settings</a>
                   </li>
+                  {currentUser && (
+                    <li>
+                      <button onClick={handleLogout} className="text-accent6 hover:text-accent5">
+                        Logout
+                      </button>
+                    </li>
+                  )}
                 </ul>
               </nav>
             </div>
