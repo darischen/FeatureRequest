@@ -36,12 +36,12 @@ export default function FeatureRequestPage() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [features, setFeatures] = useState<Feature[]>([]);
   const [sortOption, setSortOption] = useState<'votes-desc' | 'votes-asc' | 'time-desc' | 'time-asc'>('votes-desc');
-  const [filterSelectedCategories, setFilterSelectedCategories] = useState<string[]>([]); // NEW state for filtering
+  const [filterSelectedCategories, setFilterSelectedCategories] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState(''); // NEW: state for the keyword search
   const router = useRouter();
 
   const availableCategories = ["UI", "UX", "Performance", "Bug", "Feature", "Other"];
 
-  // Used only for the submission form, unchanged
   const handleCategoryChange = (category: string) => {
     if (selectedCategories.includes(category)) {
       setSelectedCategories(selectedCategories.filter(c => c !== category));
@@ -50,7 +50,7 @@ export default function FeatureRequestPage() {
     }
   };
 
-  // NEW function to toggle filter tags (limit to 3, just like submission form)
+  // For filtering by tags
   const handleFilterCategoryChange = (category: string) => {
     if (filterSelectedCategories.includes(category)) {
       setFilterSelectedCategories(filterSelectedCategories.filter(c => c !== category));
@@ -136,7 +136,6 @@ export default function FeatureRequestPage() {
   };
 
   useEffect(() => {
-    // Query all approved features
     const q = query(
       collection(db, "FeatureRequests"),
       where("status", "==", "approved")
@@ -163,8 +162,16 @@ export default function FeatureRequestPage() {
     return 0;
   });
 
+  // Filter by search (in title or description, not case-sensitive)
+  const searchedFeatures = sortedFeatures.filter(feature => {
+    const q = searchQuery.toLowerCase();
+    const titleMatch = feature.title.toLowerCase().includes(q);
+    const descMatch = feature.description.toLowerCase().includes(q);
+    return titleMatch || descMatch;
+  });
+
   // Show only features that have ALL selected filter tags (AND logic).
-  const filteredFeatures = sortedFeatures.filter(feature => {
+  const filteredFeatures = searchedFeatures.filter(feature => {
     if (filterSelectedCategories.length === 0) return true;
     return filterSelectedCategories.every(cat => feature.category.includes(cat));
   });
@@ -269,12 +276,23 @@ export default function FeatureRequestPage() {
               </button>
             </form>
 
-            {/* Sorting & Filtering on the same row */}
+            {/* Sorting & Filtering row */}
             <div className="mb-4 flex flex-col md:flex-row md:items-center md:space-x-6 space-y-4 md:space-y-0">
-              {/* Sorting Dropdown */}
+              {/* Keyword Search (NEW) */}
               <div>
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="border border-accent4 rounded-md p-2 text-primary focus:outline-none focus:ring-2 focus:ring-secondary w-48"
+                />
+              </div>
+
+              {/* Sorting Dropdown */}
+              <div className="flex items-center">
                 <label htmlFor="sort" className="mr-2 font-medium text-primary">
-                  Sort by:
+                  Sort:
                 </label>
                 <select
                   id="sort"
@@ -294,7 +312,7 @@ export default function FeatureRequestPage() {
               </div>
 
               {/* Filter Box */}
-              <div>
+              <div className="flex items-center">
                 <span className="mr-2 font-medium text-primary">Filter:</span>
                 <div className="flex flex-wrap gap-2">
                   {availableCategories.map((category) => (
