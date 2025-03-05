@@ -36,15 +36,26 @@ export default function FeatureRequestPage() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [features, setFeatures] = useState<Feature[]>([]);
   const [sortOption, setSortOption] = useState<'votes-desc' | 'votes-asc' | 'time-desc' | 'time-asc'>('votes-desc');
+  const [filterSelectedCategories, setFilterSelectedCategories] = useState<string[]>([]); // NEW state for filtering
   const router = useRouter();
 
   const availableCategories = ["UI", "UX", "Performance", "Bug", "Feature", "Other"];
 
+  // Used only for the submission form, unchanged
   const handleCategoryChange = (category: string) => {
     if (selectedCategories.includes(category)) {
       setSelectedCategories(selectedCategories.filter(c => c !== category));
     } else if (selectedCategories.length < 3) {
       setSelectedCategories([...selectedCategories, category]);
+    }
+  };
+
+  // NEW function to toggle filter tags (limit to 3, just like submission form)
+  const handleFilterCategoryChange = (category: string) => {
+    if (filterSelectedCategories.includes(category)) {
+      setFilterSelectedCategories(filterSelectedCategories.filter(c => c !== category));
+    } else if (filterSelectedCategories.length < 3) {
+      setFilterSelectedCategories([...filterSelectedCategories, category]);
     }
   };
 
@@ -79,7 +90,6 @@ export default function FeatureRequestPage() {
     }
   };
 
-  // Toggle upvote: if user has already upvoted, remove it; otherwise, add it.
   const handleUpvote = async (feature: Feature) => {
     if (!auth.currentUser) {
       alert("Please login to upvote.");
@@ -115,7 +125,6 @@ export default function FeatureRequestPage() {
     }
   };
 
-  // Logout handler
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -127,11 +136,11 @@ export default function FeatureRequestPage() {
   };
 
   useEffect(() => {
-    // Query all features (no status filter), ordered by created_at descending
+    // Query all approved features
     const q = query(
       collection(db, "FeatureRequests"),
       where("status", "==", "approved")
-      // orderBy("created_at", "desc") // commented out as in your file
+      // orderBy("created_at", "desc")
     );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -152,6 +161,12 @@ export default function FeatureRequestPage() {
     if (sortOption === 'time-asc') return a.created_at - b.created_at;
     if (sortOption === 'time-desc') return b.created_at - a.created_at;
     return 0;
+  });
+
+  // Show only features that have ALL selected filter tags (AND logic).
+  const filteredFeatures = sortedFeatures.filter(feature => {
+    if (filterSelectedCategories.length === 0) return true;
+    return filterSelectedCategories.every(cat => feature.category.includes(cat));
   });
 
   const currentUser = auth.currentUser;
@@ -228,7 +243,7 @@ export default function FeatureRequestPage() {
                 />
               </div>
 
-              {/* Category Selection */}
+              {/* Category Selection (for submission) */}
               <div>
                 <p className="text-primary font-medium mb-1">Select up to 3 categories:</p>
                 <div className="flex flex-wrap gap-2">
@@ -254,33 +269,54 @@ export default function FeatureRequestPage() {
               </button>
             </form>
 
-            {/* Sorting Dropdown */}
-            <div className="mb-4">
-              <label htmlFor="sort" className="mr-2 font-medium text-primary">
-                Sort by:
-              </label>
-              <select
-                id="sort"
-                value={sortOption}
-                onChange={(e) =>
-                  setSortOption(
-                    e.target.value as 'votes-desc' | 'votes-asc' | 'time-desc' | 'time-asc'
-                  )
-                }
-                className="border border-accent4 rounded-md p-2 text-primary"
-              >
-                <option value="votes-desc">Votes: Greatest to Least</option>
-                <option value="votes-asc">Votes: Least to Greatest</option>
-                <option value="time-desc">Time: Newest First</option>
-                <option value="time-asc">Time: Oldest First</option>
-              </select>
+            {/* Sorting & Filtering on the same row */}
+            <div className="mb-4 flex flex-col md:flex-row md:items-center md:space-x-6 space-y-4 md:space-y-0">
+              {/* Sorting Dropdown */}
+              <div>
+                <label htmlFor="sort" className="mr-2 font-medium text-primary">
+                  Sort by:
+                </label>
+                <select
+                  id="sort"
+                  value={sortOption}
+                  onChange={(e) =>
+                    setSortOption(
+                      e.target.value as 'votes-desc' | 'votes-asc' | 'time-desc' | 'time-asc'
+                    )
+                  }
+                  className="border border-accent4 rounded-md p-2 text-primary"
+                >
+                  <option value="votes-desc">Votes: Greatest to Least</option>
+                  <option value="votes-asc">Votes: Least to Greatest</option>
+                  <option value="time-desc">Time: Newest First</option>
+                  <option value="time-asc">Time: Oldest First</option>
+                </select>
+              </div>
+
+              {/* Filter Box */}
+              <div>
+                <span className="mr-2 font-medium text-primary">Filter:</span>
+                <div className="flex flex-wrap gap-2">
+                  {availableCategories.map((category) => (
+                    <label key={category} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={filterSelectedCategories.includes(category)}
+                        onChange={() => handleFilterCategoryChange(category)}
+                        className="form-checkbox h-5 w-5 text-secondary"
+                      />
+                      <span className="text-primary">{category}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* Feature Requests List */}
             <div>
-              {sortedFeatures.length > 0 ? (
+              {filteredFeatures.length > 0 ? (
                 <ul className="space-y-4">
-                  {sortedFeatures.map((feature, index) => {
+                  {filteredFeatures.map((feature, index) => {
                     const currentUser = auth.currentUser?.uid;
                     const userHasUpvoted =
                       currentUser && feature.upvotedBy?.includes(currentUser);
