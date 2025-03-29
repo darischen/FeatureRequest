@@ -17,6 +17,7 @@ import {
 } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/router';
+import Navbar from "../components/navbar";
 
 interface Feature {
   id?: string;
@@ -186,33 +187,7 @@ export default function FeatureRequestPage() {
       </Head>
       <div className="min-h-screen bg-white">
         {/* Header */}
-        <header className="bg-primary shadow">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center py-6">
-              <h1 className="text-3xl font-bold text-accent6">Feature Leaderboard</h1>
-              <nav>
-                <ul className="flex space-x-6">
-                  <li>
-                    <a href="#" className="text-accent6 hover:text-accent5">Dashboard</a>
-                  </li>
-                  <li>
-                    <a href="#" className="text-accent6 hover:text-accent5">Requests</a>
-                  </li>
-                  <li>
-                    <a href="#" className="text-accent6 hover:text-accent5">Settings</a>
-                  </li>
-                  {currentUser && (
-                    <li>
-                      <button onClick={handleLogout} className="text-accent6 hover:text-accent5">
-                        Logout
-                      </button>
-                    </li>
-                  )}
-                </ul>
-              </nav>
-            </div>
-          </div>
-        </header>
+        <Navbar />
 
         {/* Main Content */}
         <main className="max-w-4xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
