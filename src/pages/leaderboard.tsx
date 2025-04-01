@@ -17,6 +17,9 @@ import {
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/router';
 import Navbar from "../components/navbar";
+import toast from 'react-hot-toast';
+import { Toaster } from 'react-hot-toast';
+import { useRef } from 'react';
 
 interface Feature {
   id?: string;
@@ -45,6 +48,9 @@ export default function FeatureRequestPage() {
   const availableCategories = ["UI", "UX", "Performance", "Bug", "Feature", "Other"];
 
   const currentUser = auth.currentUser;
+
+  // Ref to track which rejected requests have already triggered a notification
+  const notifiedRejectedRef = useRef<Set<string>>(new Set());
 
   const handleCategoryChange = (category: string) => {
     if (selectedCategories.includes(category)) {
@@ -161,6 +167,16 @@ export default function FeatureRequestPage() {
     return () => unsubscribe();
   }, [currentUser]);
 
+  /* Live notification for rejected feature requests */
+  useEffect(() => {
+    userRequests.forEach((feature) => {
+      if (feature.status === "rejected" && feature.id && !notifiedRejectedRef.current.has(feature.id)) {
+        toast.error(`Your feature request "${feature.title}" was rejected.`);
+        notifiedRejectedRef.current.add(feature.id);
+      }
+    });
+  }, [userRequests]);
+
   const sortedFeatures = [...features].sort((a, b) => {
     if (sortOption === 'votes-asc') return a.upvotes - b.upvotes;
     if (sortOption === 'votes-desc') return b.upvotes - a.upvotes;
@@ -198,9 +214,9 @@ export default function FeatureRequestPage() {
       </Head>
       <div className="min-h-screen bg-white">
         <Navbar />
-
+        <Toaster position="top-right" />
         <main className="max-w-4xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
-          <div className="mb-6 flex space-x-4">
+          <div className="mb-6 max-w-4xl mx-auto flex justify-center space-x-4">
             <button
               onClick={() => setActiveTab('leaderboard')}
               className={`px-4 py-2 rounded ${activeTab === 'leaderboard' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-black'}`}
