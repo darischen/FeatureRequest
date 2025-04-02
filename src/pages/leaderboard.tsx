@@ -219,13 +219,13 @@ export default function FeatureRequestPage() {
           <div className="mb-6 max-w-4xl mx-auto flex justify-center space-x-4">
             <button
               onClick={() => setActiveTab('leaderboard')}
-              className={`px-4 py-2 rounded ${activeTab === 'leaderboard' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-black'}`}
+              className={`px-4 py-2 rounded ${activeTab === 'leaderboard' ? 'bg-[#2A6F97] text-white' : 'bg-[#A9D6E5] text-black'}`}
             >
               Leaderboard
             </button>
             <button
               onClick={() => setActiveTab('myrequests')}
-              className={`px-4 py-2 rounded ${activeTab === 'myrequests' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-black'}`}
+              className={`px-4 py-2 rounded ${activeTab === 'myrequests' ? 'bg-[#2A6F97] text-white' : 'bg-[#A9D6E5] text-black'}`}
             >
               My Requests
             </button>

@@ -95,7 +95,7 @@ export default function AdminDashboard() {
         {features.map((feature) => (
           <li
             key={feature.docId}
-            className="bg-white p-4 rounded shadow flex flex-col md:flex-row justify-between items-start md:items-center"
+            className="bg-accent6 p-4 rounded shadow flex flex-col md:flex-row justify-between items-start md:items-center"
           >
             <div className="mb-2 md:mb-0">
               <h2 className="text-lg font-semibold text-black">{feature.title}</h2>
@@ -104,7 +104,7 @@ export default function AdminDashboard() {
                 {feature.category.map((cat, i) => (
                   <span
                     key={i}
-                    className="bg-blue-200 text-blue-800 px-2 py-1 rounded text-xs"
+                    className="bg-secondary text-accent6 px-2 py-1 rounded text-xs"
                   >
                     {cat}
                   </span>
@@ -139,8 +139,8 @@ export default function AdminDashboard() {
               onClick={() => setActiveTab(tab as "pending" | "approved" | "done")}
               className={`px-4 py-2 rounded capitalize ${
                 activeTab === tab
-                  ? "bg-blue-600 text-white"
-                  : "bg-white text-black border"
+                  ? "bg-[#2A6F97] text-white"
+                  : "bg-[#A9D6E5] text-black border"
               }`}
             >
               {tab === "pending"
@@ -174,7 +174,7 @@ export default function AdminDashboard() {
           renderFeatureList(approvedFeatures, (feature) => (
             <button
               onClick={() => handleDecision(feature.docId, "done")}
-              className="bg-indigo-500 text-white px-4 py-1 rounded hover:bg-indigo-600"
+              className="bg-quaternary text-white px-4 py-1 rounded hover:bg-indigo-600"
             >
               Mark as Done
             </button>
