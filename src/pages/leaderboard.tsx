@@ -178,7 +178,7 @@ export default function FeatureRequestPage() {
     return () => unsubscribe();
   }, [currentUser]);
 
-  /* Live notification for rejected feature requests */
+  //react-hot-toast for rejected requests, live notifications
   useEffect(() => {
     userRequests.forEach((feature) => {
       if (feature.status === "rejected" && feature.id && !notifiedRejectedRef.current.has(feature.id)) {
@@ -188,6 +188,7 @@ export default function FeatureRequestPage() {
     });
   }, [userRequests]);
 
+  // dropdown for sorting feature requests
   const sortedFeatures = [...features].sort((a, b) => {
     if (sortOption === 'votes-asc') return a.upvotes - b.upvotes;
     if (sortOption === 'votes-desc') return b.upvotes - a.upvotes;
@@ -196,16 +197,19 @@ export default function FeatureRequestPage() {
     return 0;
   });
 
+  //search box for title and description of feature requests
   const searchedFeatures = sortedFeatures.filter(feature => {
     const q = searchQuery.toLowerCase();
     return feature.title.toLowerCase().includes(q) || feature.description.toLowerCase().includes(q);
   });
 
+  //filter for feature requests by category
   const filteredFeatures = searchedFeatures.filter(feature => {
     if (filterSelectedCategories.length === 0) return true;
     return filterSelectedCategories.every(cat => feature.category.includes(cat));
   });
 
+  //tags for pending, approved, done, and rejected feature requests
   const statusBadge = (status: string | undefined) => {
     const base = "px-2 py-1 rounded text-xs font-medium";
     switch (status) {
