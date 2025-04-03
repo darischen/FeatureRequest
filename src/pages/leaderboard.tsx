@@ -1,6 +1,6 @@
 import Head from 'next/head';
-import { useState, useEffect } from 'react';
-import { db, auth } from '@/firebaseConfig';
+import { useState, useEffect, useRef } from 'react';
+import { db, auth } from '@/firebaseConfig'; // database
 import {
   collection,
   addDoc,
@@ -13,14 +13,13 @@ import {
   increment,
   getDoc,
   arrayRemove,
-} from 'firebase/firestore';
-import { signOut } from 'firebase/auth';
-import { useRouter } from 'next/router';
-import Navbar from "../components/navbar";
-import toast from 'react-hot-toast';
-import { Toaster } from 'react-hot-toast';
-import { useRef } from 'react';
+} from 'firebase/firestore'; //firestore database functions
+import { signOut } from 'firebase/auth'; //sign out of account
+import { useRouter } from 'next/router'; //page routing
+import Navbar from "../components/navbar"; //navbar at the top of the screen
+import toast, { Toaster } from 'react-hot-toast'; //notifications for rejected requests
 
+// Data type for feature requests
 interface Feature {
   id?: string;
   title: string;
@@ -34,6 +33,7 @@ interface Feature {
 }
 
 export default function FeatureRequestPage() {
+  //variables for inputs, toggles, and state management
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -44,6 +44,7 @@ export default function FeatureRequestPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'leaderboard' | 'myrequests'>('leaderboard');
 
+  //Category selection for requests
   const router = useRouter();
   const availableCategories = ["UI", "UX", "Performance", "Bug", "Feature", "Other"];
 
@@ -52,6 +53,7 @@ export default function FeatureRequestPage() {
   // Ref to track which rejected requests have already triggered a notification
   const notifiedRejectedRef = useRef<Set<string>>(new Set());
 
+  // handle category selection for feature requests
   const handleCategoryChange = (category: string) => {
     if (selectedCategories.includes(category)) {
       setSelectedCategories(selectedCategories.filter(c => c !== category));
@@ -60,6 +62,7 @@ export default function FeatureRequestPage() {
     }
   };
 
+  // handling for filter requests by categories
   const handleFilterCategoryChange = (category: string) => {
     if (filterSelectedCategories.includes(category)) {
       setFilterSelectedCategories(filterSelectedCategories.filter(c => c !== category));
@@ -68,6 +71,7 @@ export default function FeatureRequestPage() {
     }
   };
 
+  // submitting a feature request
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !description.trim()) return;
@@ -78,6 +82,7 @@ export default function FeatureRequestPage() {
         return;
       }
 
+      // if user is logged in, add the request to the database
       await addDoc(collection(db, "FeatureRequests"), {
         title: title.trim(),
         description: description.trim(),
@@ -89,6 +94,7 @@ export default function FeatureRequestPage() {
         created_at: Date.now()
       });
 
+      // reset the form fields
       setTitle('');
       setDescription('');
       setSelectedCategories([]);
@@ -99,6 +105,7 @@ export default function FeatureRequestPage() {
     }
   };
 
+  //upvote a feature request
   const handleUpvote = async (feature: Feature) => {
     if (!auth.currentUser) {
       alert("Please login to upvote.");
@@ -116,6 +123,7 @@ export default function FeatureRequestPage() {
       const featureData = featureSnap.data() as Feature;
       const userHasUpvoted = featureData.upvotedBy && featureData.upvotedBy.includes(uid);
 
+      // each user can only upvote once, so toggle the upvote
       if (userHasUpvoted) {
         await updateDoc(featureRef, {
           upvotes: increment(-1),
@@ -132,12 +140,14 @@ export default function FeatureRequestPage() {
     }
   };
 
+  // update the approved list of feature requests
   const fetchRequests = () => {
     const approvedQuery = query(collection(db, "FeatureRequests"), where("status", "==", "approved"));
     const userQuery = currentUser
       ? query(collection(db, "FeatureRequests"), where("submitted_by", "==", currentUser.uid))
       : null;
 
+    // stop listening to the database on approved feature requests
     const unsub1 = onSnapshot(approvedQuery, (snapshot) => {
       const data: Feature[] = [];
       snapshot.forEach((docSnap) => {
@@ -146,6 +156,7 @@ export default function FeatureRequestPage() {
       setFeatures(data);
     });
 
+    // stop listening to the database on current user feature requests
     const unsub2 = userQuery
       ? onSnapshot(userQuery, (snapshot) => {
           const data: Feature[] = [];
@@ -312,6 +323,22 @@ export default function FeatureRequestPage() {
                     <option value="time-desc">Time: Newest First</option>
                     <option value="time-asc">Time: Oldest First</option>
                   </select>
+                </div>
+                <div className="w-72">
+                  <p className="text-primary font-medium mb-1">Filter Categories:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {availableCategories.map((category) => (
+                      <label key={category} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={filterSelectedCategories.includes(category)}
+                          onChange={() => handleFilterCategoryChange(category)}
+                          className="form-checkbox h-5 w-5 text-secondary"
+                        />
+                        <span className="text-primary">{category}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
