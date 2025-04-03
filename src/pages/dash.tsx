@@ -1,7 +1,7 @@
 import Head from "next/head";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/router";
-import { auth, db } from "@/firebaseConfig";
+import { useRouter } from "next/router"; // next routing
+import { auth, db } from "@/firebaseConfig"; // firebase configuration
 import {
   collection,
   query,
@@ -9,9 +9,10 @@ import {
   onSnapshot,
   updateDoc,
   doc
-} from "firebase/firestore";
-import Navbar from "../components/navbar";
+} from "firebase/firestore"; // firebase firestore functions
+import Navbar from "../components/navbar"; // navbar component
 
+// data type for feature requests
 interface Feature {
   docId: string;
   title: string;
@@ -23,40 +24,48 @@ interface Feature {
 }
 
 export default function AdminDashboard() {
+  // various states of each request stored in variables
   const [pendingFeatures, setPendingFeatures] = useState<Feature[]>([]);
   const [approvedFeatures, setApprovedFeatures] = useState<Feature[]>([]);
   const [doneFeatures, setDoneFeatures] = useState<Feature[]>([]);
   const [activeTab, setActiveTab] = useState<"pending" | "approved" | "done">("pending");
   const router = useRouter();
 
+  // hook for updating list of requests in real time
   useEffect(() => {
+    // listen for pending requests
     const unsubPending = onSnapshot(
       query(collection(db, "FeatureRequests"), where("status", "==", "pending")),
       (snapshot) => {
         const data: Feature[] = [];
         snapshot.forEach((docSnap) => {
+          // add in each pending request
           data.push({ ...(docSnap.data() as Feature), docId: docSnap.id });
         });
         setPendingFeatures(data);
       }
     );
 
+    // listen for approved requests
     const unsubApproved = onSnapshot(
       query(collection(db, "FeatureRequests"), where("status", "==", "approved")),
       (snapshot) => {
         const data: Feature[] = [];
         snapshot.forEach((docSnap) => {
+          // add each approved request
           data.push({ ...(docSnap.data() as Feature), docId: docSnap.id });
         });
         setApprovedFeatures(data);
       }
     );
 
+    // listen for done requests
     const unsubDone = onSnapshot(
       query(collection(db, "FeatureRequests"), where("status", "==", "done")),
       (snapshot) => {
         const data: Feature[] = [];
         snapshot.forEach((docSnap) => {
+          // add each done request
           data.push({ ...(docSnap.data() as Feature), docId: docSnap.id });
         });
         setDoneFeatures(data);
@@ -70,11 +79,13 @@ export default function AdminDashboard() {
     };
   }, []);
 
+  // decisions made by the admin
   const handleDecision = async (
     docId: string,
     decision: "approved" | "rejected" | "done"
   ) => {
     try {
+      // update the status of the request in the database
       await updateDoc(doc(db, "FeatureRequests", docId), {
         status: decision,
       });
@@ -84,6 +95,7 @@ export default function AdminDashboard() {
     }
   };
 
+  // render list of requests based on the status with actions
   const renderFeatureList = (
     features: Feature[],
     actions: (feature: Feature) => React.ReactNode
@@ -91,6 +103,7 @@ export default function AdminDashboard() {
     return features.length === 0 ? (
       <p className="text-center text-gray-700">No feature requests here.</p>
     ) : (
+      // display list of requests
       <ul className="space-y-4 max-w-4xl mx-auto">
         {features.map((feature) => (
           <li
@@ -120,6 +133,7 @@ export default function AdminDashboard() {
     );
   };
 
+  // render main component
   return (
     <>
       <Navbar />
