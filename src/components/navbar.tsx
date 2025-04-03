@@ -1,11 +1,12 @@
-import { auth } from "@/firebaseConfig";
-import { signOut } from "firebase/auth";
-import { useRouter } from "next/router";
+import { auth } from "@/firebaseConfig"; // import the Firebase configuration
+import { signOut } from "firebase/auth"; // sign out from firebase
+import { useRouter } from "next/router"; // next routing
 
 export default function Navbar() {
   const router = useRouter();
   const currentUser = auth.currentUser;
 
+  // handling the logout process
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -16,6 +17,7 @@ export default function Navbar() {
     }
   };
 
+  //navbar rendering
   return (
     <header className="bg-primary shadow">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

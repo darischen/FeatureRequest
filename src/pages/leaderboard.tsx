@@ -245,8 +245,6 @@ export default function FeatureRequestPage() {
               My Requests
             </button>
           </div>
-
-          {/* Submission form appears only on Leaderboard tab */}
           {activeTab === 'leaderboard' && (
             <div className="bg-accent5 rounded-lg shadow p-6 mb-8">
               <form onSubmit={handleSubmit} className="mb-6 space-y-4">
@@ -304,8 +302,6 @@ export default function FeatureRequestPage() {
                   Submit Request
                 </button>
               </form>
-
-              {/* Sorting and Filtering */}
               <div className="mb-4 flex flex-col md:flex-row md:items-center md:space-x-6 space-y-4 md:space-y-0">
                 <input
                   type="text"
@@ -347,8 +343,6 @@ export default function FeatureRequestPage() {
               </div>
             </div>
           )}
-
-          {/* Feature list display */}
           <div>
             {(activeTab === 'leaderboard' ? filteredFeatures : userRequests).length > 0 ? (
               <ul className="space-y-4">
