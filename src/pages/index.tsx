@@ -1,16 +1,17 @@
 import Head from "next/head";
 import { useState } from "react";
-import { useRouter } from "next/router";
-import { auth, db } from "@/firebaseConfig";
+import { useRouter } from "next/router"; // next routing
+import { auth, db } from "@/firebaseConfig"; // firebase configuration
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
-} from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+} from "firebase/auth"; // firebase auth functions
+import { doc, setDoc } from "firebase/firestore"; // 
 
 export default function Login() {
+  // state variables for login and registration
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState(""); // used for registration
   const [email, setEmail] = useState("");
@@ -18,40 +19,43 @@ export default function Login() {
   const [error, setError] = useState("");
   const router = useRouter();
 
+  // submit function for login and registration
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     try {
       if (isLogin) {
+        // sign in with email and password
         await signInWithEmailAndPassword(auth, email, password);
       } else {
-        // Create user with email & password
+        // register with email and password
         const userCredential = await createUserWithEmailAndPassword(
           auth,
           email,
           password
         );
         const user = userCredential.user;
-        // Create a document in Firestore "Users" collection with user id, username, and default role.
+        // set user data in firestore
         await setDoc(doc(db, "Users", user.uid), {
           id: user.uid,
           username: username,
           role: "user",
         });
       }
-      // After successful authentication, redirect to the leaderboard page.
+      // redirect to leaderboard page after successful login/registration
       router.push("/leaderboard");
     } catch (err: any) {
       setError(err.message);
     }
   };
 
+  // function for google sign in
   const handleGoogleSignIn = async () => {
     setError("");
+    // sign in with google
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
-      // After successful authentication, redirect to the leaderboard page.
       router.push("/leaderboard");
     } catch (err: any) {
       setError(err.message);
@@ -70,7 +74,6 @@ export default function Login() {
           </h1>
           {error && <p className="text-red-500 mb-4">{error}</p>}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Render username input only for registration */}
             {!isLogin && (
               <div>
                 <label className="block text-black">Username</label>
